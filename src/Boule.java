@@ -5,7 +5,7 @@
 public class Boule extends Objet {
 
 	/**
-	 * instance de JeuServeur pour la communication
+	 * instance de JeuServeur pour la communication 
 	 */
 	private JeuServeur jeuServeur ;
 	
