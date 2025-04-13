@@ -15,31 +15,29 @@ import outils.connexion.ClientSocket;
  *
  */
 public class Controle implements AsyncResponse {
+	private String ip;
 	private Arene frmArene;
 	private ChoixJoueur frmChoixJoueur;
 	private EntreeJeu frmEntreeJeu;
-	private String typeJeu; ///Le type de jeu: Serveur ou Connexion
+	private String typeJeu; /// Le type de jeu: Serveur ou Connexion
 	final String PORT = "";
-	
-	
+
 	@Override
 	public void reception(Connection connection, String ordre, Object info) {
-		switch(ordre) {
+		switch (ordre) {
 		case "connexion":
 			if (typeJeu == "client") {
 				frmEntreeJeu.dispose();
 				this.frmArene = new Arene();
-				(new ChoixJoueur()).setVisible(true);
-			}
-			else
-			{
-				
+				(new ChoixJoueur(this)).setVisible(true);
+			} else {
+
 			}
 		case "reception":
-			
+
 		case "deconnexion":
-	}
-			
+		}
+
 	}
 
 	/**
@@ -55,7 +53,8 @@ public class Controle implements AsyncResponse {
 	 * Constructeur
 	 */
 	private Controle() {
-		
+
+		//new ChoixJoueur(this);
 		this.frmEntreeJeu = new EntreeJeu(this);
 		this.frmEntreeJeu.setVisible(true);
 	}
@@ -68,16 +67,25 @@ public class Controle implements AsyncResponse {
 			this.frmArene.setVisible(true);
 			typeJeu = "serveur";
 			ServeurSocket servSock = new ServeurSocket(this, 6666);
-			
+			ip = info;
+
 		} else {
 			frmEntreeJeu.dispose();
-			(new ChoixJoueur()).setVisible(true);
+			//(new ChoixJoueur(this)).setVisible(true);
 			typeJeu = "client";
 			ClientSocket servSock = new ClientSocket(this, info, 6666);
-			
-			
+
 		}
 	}
 
+	public void evenementEntreeJeu(String pseudo, int numPerso) {
+		this.frmChoixJoueur = new ChoixJoueur(this);
+		this.frmChoixJoueur.setVisible(true);
+		typeJeu = "client";
+		frmEntreeJeu.dispose();
+		this.frmArene = new Arene();
+		this.frmArene.setVisible(true);
+		frmChoixJoueur.dispose();
 
+	}
 }

@@ -5,10 +5,15 @@ package controleur;
 
 /**
  * Global contient les constantes du programme
- * @author emds
+ * @author emds * Et de Harko!
  *
  */
 public interface Global {
+	
+	/*
+	 * Maximum de personnages
+	 */
+	int MAXPERSONNAGE = 3;
 	
 	/**
 	 * N° du port d'écoute du serveur
