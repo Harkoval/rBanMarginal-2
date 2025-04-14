@@ -1,91 +1,114 @@
 package controleur;
 
-import vue.Arene;
-import vue.EntreeJeu;
-import vue.ChoixJoueur;
-import outils.connexion.ServeurSocket;
+import modele.Jeu;
+import modele.JeuClient;
+import modele.JeuServeur;
 import outils.connexion.AsyncResponse;
-import outils.connexion.Connection;
 import outils.connexion.ClientSocket;
+import outils.connexion.Connection;
+import outils.connexion.ServeurSocket;
+import vue.Arene;
+import vue.ChoixJoueur;
+import vue.EntreeJeu;
 
 /**
- * Contrôleur et point d'entrée de l'applicaton
- * 
+ * Contrôleur et point d'entrée de l'applicaton 
  * @author emds
  *
  */
-public class Controle implements AsyncResponse {
-	private String ip;
+public class Controle implements AsyncResponse, Global {
+
+	/**
+	 * frame EntreeJeu
+	 */
+	private EntreeJeu frmEntreeJeu ;
+	/**
+	 * frame Arene
+	 */
 	private Arene frmArene;
+	/**
+	 * frame ChoixJoueur
+	 */
 	private ChoixJoueur frmChoixJoueur;
-	private EntreeJeu frmEntreeJeu;
-	private String typeJeu; /// Le type de jeu: Serveur ou Connexion
-	final String PORT = "";
-
-	@Override
-	public void reception(Connection connection, String ordre, Object info) {
-		switch (ordre) {
-		case "connexion":
-			if (typeJeu == "client") {
-				frmEntreeJeu.dispose();
-				this.frmArene = new Arene();
-				(new ChoixJoueur(this)).setVisible(true);
-			} else {
-
-			}
-		case "reception":
-
-		case "deconnexion":
-		}
-
-	}
+	/**
+	 * instance du jeu (JeuServeur ou JeuClient)
+	 */
+	private Jeu leJeu;
 
 	/**
 	 * Méthode de démarrage
-	 * 
 	 * @param args non utilisé
 	 */
 	public static void main(String[] args) {
 		new Controle();
 	}
-
+	
 	/**
 	 * Constructeur
 	 */
 	private Controle() {
-
-		//new ChoixJoueur(this);
-		this.frmEntreeJeu = new EntreeJeu(this);
+		this.frmEntreeJeu = new EntreeJeu(this) ;
 		this.frmEntreeJeu.setVisible(true);
 	}
-
+	
+	/**
+	 * Demande provenant de la vue EntreeJeu
+	 * @param info information à traiter
+	 */
 	public void evenementEntreeJeu(String info) {
-		System.out.println(info);
-		if (info.equals("serveur")) {
-			frmEntreeJeu.dispose();
+		if(info.equals("serveur")) {
+			new ServeurSocket(this, PORT);
+			this.leJeu = new JeuServeur(this);
+			this.frmEntreeJeu.dispose();
 			this.frmArene = new Arene();
 			this.frmArene.setVisible(true);
-			typeJeu = "serveur";
-			ServeurSocket servSock = new ServeurSocket(this, 6666);
-			ip = info;
-
 		} else {
-			frmEntreeJeu.dispose();
-			//(new ChoixJoueur(this)).setVisible(true);
-			typeJeu = "client";
-			ClientSocket servSock = new ClientSocket(this, info, 6666);
-
+			new ClientSocket(this, info, PORT);
 		}
 	}
-
-	public void evenementEntreeJeu(String pseudo, int numPerso) {
-		this.frmChoixJoueur = new ChoixJoueur(this);
-		this.frmChoixJoueur.setVisible(true);
-		typeJeu = "client";
-		frmEntreeJeu.dispose();
-		this.frmArene = new Arene();
+	
+	/**
+	 * Informations provenant de la vue ChoixJoueur
+	 * @param pseudo le pseudo du joueur
+	 * @param numPerso le numéro du personnage choisi par le joueur
+	 */
+	public void evenementChoixJoueur(String pseudo, int numPerso) {
+		this.frmChoixJoueur.dispose();
 		this.frmArene.setVisible(true);
-		frmChoixJoueur.dispose();
-
+		((JeuClient)this.leJeu).envoi(PSEUDO+STRINGSEPARE+pseudo+STRINGSEPARE+numPerso);
 	}
+
+	/**
+	 * Envoi d'informations vers l'ordinateur distant
+	 * @param connection objet de connexion pour l'envoi vers l'ordinateur distant
+	 * @param info information à envoyer
+	 */
+	public void envoi(Connection connection, Object info) {
+		connection.envoi(info);
+	}
+	
+	@Override
+	public void reception(Connection connection, String ordre, Object info) {
+		switch(ordre) {
+		case CONNEXION :
+			if(!(this.leJeu instanceof JeuServeur)) {
+				this.leJeu = new JeuClient(this);
+				this.leJeu.connexion(connection);
+				this.frmEntreeJeu.dispose();
+				this.frmArene = new Arene();
+				this.frmChoixJoueur = new ChoixJoueur(this);
+				this.frmChoixJoueur.setVisible(true);
+			} else {
+				this.leJeu.connexion(connection);
+			}
+			break;
+		case RECEPTION :
+			this.leJeu.reception(connection, info);
+			break;
+		case DECONNEXION :
+			break;
+		}
+		
+	}
+
 }
