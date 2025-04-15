@@ -1,5 +1,8 @@
 package controleur;
 
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
 import modele.Jeu;
 import modele.JeuClient;
 import modele.JeuServeur;
@@ -56,11 +59,12 @@ public class Controle implements AsyncResponse, Global {
 	 * @param info information à traiter
 	 */
 	public void evenementEntreeJeu(String info) {
-		if(info.equals("serveur")) {
+		if(info.equals(SERVEUR)) {
 			new ServeurSocket(this, PORT);
 			this.leJeu = new JeuServeur(this);
 			this.frmEntreeJeu.dispose();
-			this.frmArene = new Arene();
+			this.frmArene = new Arene(this, SERVEUR);
+			((JeuServeur)this.leJeu).constructionMurs();
 			this.frmArene.setVisible(true);
 		} else {
 			new ClientSocket(this, info, PORT);
@@ -76,6 +80,66 @@ public class Controle implements AsyncResponse, Global {
 		this.frmChoixJoueur.dispose();
 		this.frmArene.setVisible(true);
 		((JeuClient)this.leJeu).envoi(PSEUDO+STRINGSEPARE+pseudo+STRINGSEPARE+numPerso);
+	}
+	
+	/**
+	 * Information provenant de la vue Arene
+	 * @param info information à transférer
+	 */
+	public void evenementArene(Object info) {
+		if(info instanceof String) {
+			((JeuClient)this.leJeu).envoi(TCHAT+STRINGSEPARE+info);
+		}else if (info instanceof Integer) {
+			((JeuClient)this.leJeu).envoi(ACTION+STRINGSEPARE+info);
+		}
+	}
+	
+	/**
+	 * Demande provenant de JeuServeur
+	 * @param ordre ordre à exécuter
+	 * @param info information à traiter
+	 */
+	public void evenementJeuServeur(String ordre, Object info) {
+		switch(ordre) {
+		case AJOUTMUR :
+			frmArene.ajoutMurs(info);
+			break;
+		case AJOUTPANELMURS :
+			this.leJeu.envoi((Connection)info, this.frmArene.getJpnMurs());
+			break;
+		case AJOUTJLABELJEU :
+			this.frmArene.ajoutJLabelJeu((JLabel)info);
+			break;
+		case MODIFPANELJEU :
+			this.leJeu.envoi((Connection)info, this.frmArene.getJpnJeu());
+			break;
+		case AJOUTPHRASE :
+			this.frmArene.ajoutTchat((String)info);
+			((JeuServeur)this.leJeu).envoi(this.frmArene.getTxtChat());
+			break;
+		}
+	}
+	
+	/**
+	 * Demande provenant de JeuClient
+	 * @param ordre ordre à exécuter
+	 * @param info information à traiter
+	 */
+	public void evenementJeuClient(String ordre, Object info) {
+		switch(ordre) {
+		case AJOUTPANELMURS :
+			this.frmArene.setJpnMurs((JPanel)info);
+			break;
+		case MODIFPANELJEU :
+			this.frmArene.setJpnJeu((JPanel)info);
+			break;
+		case MODIFTCHAT :
+			this.frmArene.setTxtChat((String)info);
+			break;
+		case JOUESON :
+			this.frmArene.joueSon((Integer)info);
+			break;
+		}
 	}
 
 	/**
@@ -95,7 +159,7 @@ public class Controle implements AsyncResponse, Global {
 				this.leJeu = new JeuClient(this);
 				this.leJeu.connexion(connection);
 				this.frmEntreeJeu.dispose();
-				this.frmArene = new Arene();
+				this.frmArene = new Arene(this, CLIENT);
 				this.frmChoixJoueur = new ChoixJoueur(this);
 				this.frmChoixJoueur.setVisible(true);
 			} else {
